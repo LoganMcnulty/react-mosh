@@ -8,7 +8,7 @@ import 'font-awesome/css/font-awesome.css'
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <App taco='bell'/>
   </React.StrictMode>,
   document.getElementById('root')
 );
