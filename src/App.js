@@ -1,9 +1,19 @@
+// React and routing
 import React, { Component } from 'react';
+import { Route, Switch, Redirect} from 'react-router-dom'
+
+// Components
+import NotFound from "./components/notFound";
+import Movies from './components/movies';
+import Customers from './components/customers'
+import Rentals from './components/rentals'
+import Navbar from './components/common/navbar'
+import MovieDetails from './components/movieDetails'
+import LoginForm from './components/loginForm';
+
+// CSS
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.css';
-import Movies from './components/movies';
-// import Counters from './components/counters'
-import Navbar from './components/navbar'
 
 class App extends Component {
     state = { 
@@ -63,14 +73,29 @@ class App extends Component {
     console.log('App - Rendered')
     return (
       <div className="App">
+
         <Navbar
-          totalCounters = {this.state.counters.filter(c => c.value > 0).length}
+          // totalCounters = {this.state.counters.filter(c => c.value > 0).length}
+          brand={'Vidly'}
+          links={['Movies','Customers','Rentals', 'Login']}
         />
 
-        <main className="container">
-          <Movies
+
+        <div className="container">
+            <Switch>
+              <Route path="/login" component={LoginForm}/>
+              <Route path="/movies/:id" component={MovieDetails}/>
+              <Route path="/customers" component={Customers}/>
+              <Route path="/rentals" component={Rentals}/>
+              <Route path="/not-found" component={NotFound}/>
+              <Route path="/movies" render={(props) => <Movies tableType='bs' {...props}/>}/>
+              <Redirect from='/' exact to="/movies"/>
+              <Redirect to="/not-found"/>
+            </Switch>
+
+          {/* <Movies
             tableType='bs'
-          />
+          /> */}
           {/* <Counters
             counters={this.state.counters}
             onReset = {this.handleReset}
@@ -79,7 +104,8 @@ class App extends Component {
 
             onDelete = {this.handleDelete}
           /> */}
-        </main>
+        </div>
+
       </div>
     );
   }

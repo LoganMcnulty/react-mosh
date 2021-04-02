@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 
 class Like extends Component {
     render() {
-        console.log('Like - Rendered')
         const {content:movie, onLike} = this.props
+
         return (
         <React.Fragment>
             <button 

@@ -11,3 +11,7 @@ body {
 .list-group-item{
   border: 1px solid rgba(0,0,0,.125)
 }
+
+.clickable{
+  cursor:pointer
+}
