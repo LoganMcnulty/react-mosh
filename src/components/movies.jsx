@@ -1,145 +1,155 @@
-import React, { Component } from 'react';
-import {getMovies } from "../services/fakeMovieService";
-import MaterialTable from 'material-table'
-import Pagination from './common/pagination'
-import {paginate} from '../utils/paginate'
-import _ from 'lodash';
-import ListGroup from '../components/common/listGroup'
-import {getGenres} from '../services/fakeGenreService'
-import MoviesTable from '../components/moviesTable'
+import React, { Component } from "react";
+import { Link } from "react-router-dom";
+import { toast } from "react-toastify"
+import MoviesTable from "./moviesTable";
+import ListGroup from "./common/listGroup";
+import Pagination from "./common/pagination";
+import { getMovies, deleteMovie} from "../services/movieService";
+import { getGenres } from "../services/genreService";
+import { paginate } from "../utils/paginate";
+import _ from "lodash";
+import SearchBox from "./searchBox";
 
 class Movies extends Component {
-    state = {
-        movies: [],
-        pageSize: 4,
-        currentPage:1,
-        genres:[],
-        sortColumn: {path:'title', order:'asc'},
-        tableType: this.props.tableType
+  state = {
+    movies: [],
+    genres: [],
+    currentPage: 1,
+    pageSize: 4,
+    searchQuery: "",
+    selectedGenre: null,
+    sortColumn: { path: "title", order: "asc" }
+  };
+
+  async componentDidMount() {
+    console.log('Movies - Mounted')
+    const {data} = await getGenres()
+    const genres = [{ _id: "", name: "All Genres" }, ...data];
+
+    const { data: movies } = await getMovies()
+    this.setState({ movies, genres });
+  }
+
+    // This is where you can do cleanup for things such as timers, data retrieval for a live element, etc.
+  // Otherwise there can be memory leaks
+  componentWillUnmount(){
+    console.log('Movies - Unmount')
+  }
+
+  handleDelete = async movie => {
+    const originalMovies = this.state.movies;
+
+    const movies = originalMovies.filter(m => m._id !== movie._id);
+    this.setState({ movies });
+
+  try{
+   await deleteMovie(movie._id);
+  }
+  catch (err){
+    if (err.response && err.response.status === 404){
+      toast.error("this movies has already been deleted")
     }
+    this.setState({movies:originalMovies})
+  }
+  };
 
-    componentDidMount(){
-        const genres = [{_id:'', name: 'All Genres'},...getGenres()]
-        this.setState({movies:getMovies(), genres})
-    }
+  handleLike = movie => {
+    const movies = [...this.state.movies];
+    const index = movies.indexOf(movie);
+  // I'm not sure why this line is here, spreading the movie into itself. From Mosh. It works without the line
+    movies[index] = { ...movies[index] };
+    movies[index].liked = !movies[index].liked;
+    this.setState({ movies });
+  };
 
-    handleDelete = movie => {
-        const movies = this.state.movies.filter(m => m._id !== movie._id)
-        this.setState({movies: movies})
-    }
+  handlePageChange = page => {
+    this.setState({ currentPage: page });
+  };
 
-    handleLike = movie => {
-        const movies = [...this.state.movies];
-        const index = movies.indexOf(movie);
-        movies[index] = {...movies[index]}
-        movies[index].liked = !movies[index].liked
-        this.setState({movies})
-    }
+  handleGenreSelect = genre => {
+    this.setState({ selectedGenre: genre, searchQuery: "", currentPage: 1 });
+  };
 
-    handlePageChange = page => {
-        this.setState({currentPage:page})
-    }
+  handleSearch = query => {
+    this.setState({ searchQuery: query, selectedGenre: null, currentPage: 1 });
+  };
 
-    handleGenreSelect = genre => {
-        this.setState({selectedGenre: genre, currentPage:1})
-    }
+  handleSort = sortColumn => {
+    this.setState({ sortColumn });
+  };
 
-    handleSort = sortColumn => {
-        this.setState({sortColumn})
-    }
+  getPagedData = () => {
+    const {
+      pageSize,
+      currentPage,
+      sortColumn,
+      selectedGenre,
+      searchQuery,
+      movies: allMovies
+    } = this.state;
 
-    getPageData = () => {
-        const { pageSize, currentPage, movies:allMovies, selectedGenre, sortColumn} = this.state
+    let filtered = allMovies;
+    if (searchQuery)
+      filtered = allMovies.filter(m =>
+        m.title.toLowerCase().startsWith(searchQuery.toLowerCase())
+      );
+    else if (selectedGenre && selectedGenre._id)
+      filtered = allMovies.filter(m => m.genre._id === selectedGenre._id);
 
-        // filter
-            const filtered = selectedGenre && selectedGenre._id ? allMovies.filter(m => m.genre._id === selectedGenre._id)
-            :allMovies
-        // sort 
-            const sorted = _.orderBy(filtered, [sortColumn.path], [sortColumn.order])
-        // pgainate
-            const movies = paginate(sorted, currentPage, pageSize)
+    const sorted = _.orderBy(filtered, [sortColumn.path], [sortColumn.order]);
 
-            return {totalCount: filtered.length, data:movies}
-    }
+    const movies = paginate(sorted, currentPage, pageSize);
 
-    renderTable = () => {
-        const { pageSize, currentPage, movies:allMovies, tableType, genres, selectedGenre, sortColumn} = this.state
+    return { totalCount: filtered.length, data: movies };
+  };
 
-        const {totalCount, data} = this.getPageData()
+  render() {
 
+    const { length: count } = this.state.movies;
+    const { pageSize, currentPage, sortColumn, searchQuery } = this.state;
+    const {user} = this.props
 
-        return (
-            <div style={{ maxWidth: '100%' }}>
-                {
-                allMovies.length === 0 
-                    ? 
-                        'Out of Movies!'
-                    :
-                        <div className = 'row'>
-                            <div className='col-3'>
-                                <ListGroup
-                                    items={genres}
-                                    selectedItem={selectedGenre}
-                                    onItemSelect = {this.handleGenreSelect}
-                                />
-                            </div>
-                            <div className='col'>
-                            <p className='text-dark p-2 m-0'>
-                                Num movies in DB: {totalCount}
-                            </p>
+    if (count === 0) return <p>There are no movies in the database.</p>;
+    const { totalCount, data: movies } = this.getPagedData();
 
-                            {tableType === 'material' 
-                            
-                            ?
-                                <MaterialTable
-                                    columns={[
-                                        { title: 'Title', field: 'title' },
-                                        { title: 'Genre', field: 'genre.name' },
-                                        { title: 'Stock', field: 'numberInStock', type: 'numeric' },
-                                        { title: 'Rate', field: 'dailyRentalRate', type: 'numeric' }
-                                    ]}
-                                    data={allMovies}
-                                    actions={[
-                                        {
-                                            icon: 'delete',
-                                            tooltip: 'Delete Movie',
-                                            onClick:(event, rowData) => this.handleDelete(rowData)
-                                        }
-                                    ]}
-                                    title="Demo Title"
-                                /> 
-
-                            :
-                                <MoviesTable 
-                                    movies={data}
-                                    onLike={this.handleLike}
-                                    onDelete={this.handleDelete}
-                                    onSort={this.handleSort}
-                                    sortColumn={sortColumn}
-                                />
-                            }
-
-                                <Pagination 
-                                    itemsCount={totalCount}
-                                    pageSize={pageSize}
-                                    onPageChange={this.handlePageChange}
-                                    currentPage = {currentPage}
-                                />
-                            </div>
-
-                        </div>
-                }
-            </div>
-        )
-    }
-
-    render() {
-        return(
-        <div>
-            {this.renderTable()}
+    return (
+      <div className="row">
+        <div className="col-3">
+          <ListGroup
+            items={this.state.genres}
+            selectedItem={this.state.selectedGenre}
+            onItemSelect={this.handleGenreSelect}
+          />
         </div>
-        )
-    }
+        <div className="col">
+          {user&& 
+            <Link
+            to="/movies/new"
+            className="btn btn-primary mb-3"
+          >
+            New Movie
+          </Link>
+          }
+
+          <p>Showing {totalCount} movies in the database.</p>
+          <SearchBox value={searchQuery} onChange={this.handleSearch}/>
+          <MoviesTable
+            movies={movies}
+            sortColumn={sortColumn}
+            onLike={this.handleLike}
+            onDelete={this.handleDelete}
+            onSort={this.handleSort}
+          />
+          <Pagination
+            itemsCount={totalCount}
+            pageSize={pageSize}
+            currentPage={currentPage}
+            onPageChange={this.handlePageChange}
+          />
+        </div>
+      </div>
+    );
+  }
 }
 
 export default Movies;

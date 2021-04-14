@@ -14,10 +14,13 @@ const NavBar = ({brand, links}) => {
             <div className="collapse navbar-collapse" id="navbarNav">
                 <ul className="navbar-nav">
                     {links.map(link => {
+                        let navText = link[0]
+                        let navLink = link[1]
+
                         return <li 
-                        key={link}
+                        key={navText}
                         className='nav-item'>
-                                <NavLink className='nav-link' to={'/'+ link}>{link}</NavLink>
+                                <NavLink className='nav-link' to={'/'+ navLink}>{navText}</NavLink>
                                 </li>
                     })}
                 </ul>

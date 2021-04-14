@@ -1,32 +1,16 @@
-import React, { Component } from 'react';
+import React from "react";
 
-class Like extends Component {
-    render() {
-        const {content:movie, onLike} = this.props
+const Like = props => {
+  let classes = "fa fa-heart";
+  if (!props.liked) classes += "-o";
+  return (
+    <i
+      onClick={props.onClick}
+      style={{ cursor: "pointer" }}
+      className={classes}
+      aria-hidden="true"
+    />
+  );
+};
 
-        return (
-        <React.Fragment>
-            <button 
-                className="btn btn-transparent"
-                onClick={() => onLike(movie)}
-                style={{
-                    outline: 'none',
-                    border: 'none !important',
-                    'WebkitBoxShadow': 'none !important',
-                    'BoxShadow':'none !important',
-                    'MozBoxShadow':'none !important'
-                }}
-            >
-                <span className={this.checkLiked(movie)}></span>
-            </button>
-        </React.Fragment>
-        );
-    }
-
-    checkLiked = (movie) => {
-        let classes = "fa fa-heart";
-        classes += (movie.liked) ? "-o" : "";
-        return classes;
-    }
-}
 export default Like;
